@@ -193,7 +193,7 @@ module XEN
                 :disk_size       => [],
                 :snapshot_size   => []
             }
-
+            if !dom['config'].has_key?('disks') then next
             dom['config']['disks'].each do |disk|
                 next if !disk['pdev_path']
 
