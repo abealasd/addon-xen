@@ -193,24 +193,29 @@ module XEN
                 :disk_size       => [],
                 :snapshot_size   => []
             }
+            if !dom['config'].has_key?('disks') then next
+                begin
+                    dom['config']['disks'].each do |disk|
+                        next if !disk['pdev_path']
 
-            dom['config']['disks'].each do |disk|
-                next if !disk['pdev_path']
+                        path = disk['pdev_path']
 
-                path = disk['pdev_path']
+                        text = `qemu-img info --output=json #{path}`
+                        next if !$? || !$?.success?
 
-                text = `qemu-img info --output=json #{path}`
-                next if !$? || !$?.success?
+                        json = JSON.parse(text)
 
-                json = JSON.parse(text)
+                        disk_id = path.split(".")[-1]
 
-                disk_id = path.split(".")[-1]
+                        disk_size = json['actual-size'].to_f/1024/1024
 
-                disk_size = json['actual-size'].to_f/1024/1024
-
-                data[:disk_size] << {:id => disk_id, :size => disk_size.round}
+                        data[:disk_size] << {:id => disk_id, :size => disk_size.round}
+                    end
+                rescue
+                    STDERR.puts "Error parsing doms"
+                    STDERR.puts $@
+                end
             end
-
 
             data
         end
